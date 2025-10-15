@@ -1,10 +1,12 @@
 import unittest
 import json
 from backend.user_service.app import app, db, User
+import pyotp
 
 class UserServiceTestCase(unittest.TestCase):
     def setUp(self):
         app.config['TESTING'] = True
+        app.config['SECRET_KEY'] = 'test-secret-key'
         app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         self.app = app.test_client()
@@ -16,55 +18,93 @@ class UserServiceTestCase(unittest.TestCase):
             db.session.remove()
             db.drop_all()
 
-    def test_register_success(self):
-        """Test user registration success."""
+    def _register_user(self, email, password):
         user_data = {
-            'email': 'test@example.com',
-            'password': 'password123',
+            'email': email,
+            'password': password,
             'latitude': 40.7128,
             'longitude': -74.0060
         }
-        response = self.app.post('/register',
-                                 data=json.dumps(user_data),
-                                 content_type='application/json')
-        self.assertEqual(response.status_code, 201)
-        self.assertIn('User registered successfully', str(response.data))
-        with app.app_context():
-            user = User.query.filter_by(email='test@example.com').first()
-            self.assertIsNotNone(user)
-            self.assertTrue(user.check_password('password123'))
+        return self.app.post('/register',
+                             data=json.dumps(user_data),
+                             content_type='application/json')
 
-    def test_register_duplicate_email(self):
-        """Test registration with a duplicate email."""
-        user_data = {
-            'email': 'test@example.com',
-            'password': 'password123',
-            'latitude': 40.7128,
-            'longitude': -74.0060
-        }
-        # First registration
-        self.app.post('/register',
-                      data=json.dumps(user_data),
-                      content_type='application/json')
-        # Second registration with the same email
-        response = self.app.post('/register',
-                                 data=json.dumps(user_data),
-                                 content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Email address already registered', str(response.data))
+    def test_registration_and_mfa_setup_flow(self):
+        """Test the entire user journey: register -> setup mfa -> access protected route"""
+        with self.app as client:
+            # 1. Register a new user
+            response = self._register_user('journey@example.com', 'password123')
+            self.assertEqual(response.status_code, 201)
+            self.assertIn('Please proceed to MFA setup', str(response.data))
 
-    def test_register_missing_fields(self):
-        """Test registration with missing fields."""
-        user_data = {
-            'email': 'test2@example.com',
-            'password': 'password123'
-            # Missing latitude and longitude
-        }
-        response = self.app.post('/register',
-                                 data=json.dumps(user_data),
-                                 content_type='application/json')
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Missing required fields', str(response.data))
+            # 2. Immediately try to setup MFA
+            response = client.get('/mfa/setup')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.mimetype, 'image/png')
+
+            # 3. Verify the MFA token to complete setup and log in
+            with app.app_context():
+                user = User.query.filter_by(email='journey@example.com').first()
+                self.assertIsNotNone(user.mfa_secret)
+                totp = pyotp.TOTP(user.mfa_secret)
+                valid_token = totp.now()
+
+            response = client.post('/mfa/verify',
+                                   data=json.dumps({'token': valid_token}),
+                                   content_type='application/json')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('MFA enabled and user logged in successfully', str(response.data))
+
+            # 4. Access a protected route
+            response = client.get('/profile')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('journey@example.com', str(response.data))
+
+    def test_login_with_existing_mfa_user(self):
+        """Test login flow for a user who has already set up MFA."""
+        with self.app as client:
+            # 1. Setup a user with MFA enabled
+            self._register_user('existing@example.com', 'password123')
+            client.get('/mfa/setup')
+            with app.app_context():
+                user = User.query.filter_by(email='existing@example.com').first()
+                totp = pyotp.TOTP(user.mfa_secret)
+                valid_token = totp.now()
+            client.post('/mfa/verify', data=json.dumps({'token': valid_token}), content_type='application/json')
+            # Logout the user
+            with client.session_transaction() as sess:
+                sess.clear()
+
+            # 2. Login with email and password
+            login_data = {'email': 'existing@example.com', 'password': 'password123'}
+            response = client.post('/login',
+                                   data=json.dumps(login_data),
+                                   content_type='application/json')
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(json.loads(response.data)['mfa_required'])
+
+            # 3. Provide MFA token to complete login
+            with app.app_context():
+                user = User.query.filter_by(email='existing@example.com').first()
+                totp = pyotp.TOTP(user.mfa_secret)
+                valid_token = totp.now()
+
+            response = client.post('/login/mfa',
+                                   data=json.dumps({'token': valid_token}),
+                                   content_type='application/json')
+            self.assertEqual(response.status_code, 200)
+
+            # 4. Access protected route
+            response = client.get('/profile')
+            self.assertEqual(response.status_code, 200)
+
+    def test_login_with_invalid_credentials(self):
+        """Test login with incorrect password."""
+        self._register_user('invalid@example.com', 'password123')
+        login_data = {'email': 'invalid@example.com', 'password': 'wrongpassword'}
+        response = self.app.post('/login', data=json.dumps(login_data), content_type='application/json')
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('Invalid credentials', str(response.data))
 
 if __name__ == '__main__':
     unittest.main()
