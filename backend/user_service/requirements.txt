@@ -4,3 +4,4 @@ Werkzeug
 pyotp
 qrcode
 Pillow
+pygeohash

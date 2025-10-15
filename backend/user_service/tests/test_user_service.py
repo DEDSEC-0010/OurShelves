@@ -2,6 +2,7 @@ import unittest
 import json
 from backend.user_service.app import app, db, User
 import pyotp
+import pygeohash as pgh
 
 class UserServiceTestCase(unittest.TestCase):
     def setUp(self):
@@ -105,6 +106,33 @@ class UserServiceTestCase(unittest.TestCase):
         response = self.app.post('/login', data=json.dumps(login_data), content_type='application/json')
         self.assertEqual(response.status_code, 401)
         self.assertIn('Invalid credentials', str(response.data))
+
+    def test_geohash_on_registration(self):
+        """Test that a geohash is created on user registration."""
+        lat, lon = 37.7749, -122.4194
+        user_data = {
+            'email': 'geohash@example.com',
+            'password': 'password123',
+            'latitude': lat,
+            'longitude': lon
+        }
+        self.app.post('/register',
+                      data=json.dumps(user_data),
+                      content_type='application/json')
+
+        with app.app_context():
+            user = User.query.filter_by(email='geohash@example.com').first()
+            self.assertIsNotNone(user)
+            self.assertEqual(user.geohash, pgh.encode(lat, lon))
+
+    def test_onboarding_info_endpoint(self):
+        """Test the /onboarding-info endpoint returns correct information."""
+        response = self.app.get('/onboarding-info')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data)
+        self.assertIn('title', data)
+        self.assertIn('core_principles', data)
+        self.assertEqual(len(data['core_principles']), 3)
 
 if __name__ == '__main__':
     unittest.main()

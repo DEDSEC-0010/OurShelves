@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pyotp
 import qrcode
 import io
+import pygeohash as pgh
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super-secret-key-change-in-production'
@@ -21,6 +22,7 @@ class User(db.Model):
     completed_transactions = db.Column(db.Integer, nullable=False, default=0)
     mfa_secret = db.Column(db.String(16), nullable=True)
     mfa_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    geohash = db.Column(db.String(12), nullable=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -40,7 +42,8 @@ def register():
     user = User(
         email=data['email'],
         latitude=data['latitude'],
-        longitude=data['longitude']
+        longitude=data['longitude'],
+        geohash=pgh.encode(data['latitude'], data['longitude'])
     )
     user.set_password(data['password'])
     db.session.add(user)
@@ -141,6 +144,27 @@ def profile():
     if not user:
         return jsonify({'message': 'User not found'}), 404
     return jsonify({'email': user.email})
+
+@app.route('/onboarding-info', methods=['GET'])
+def onboarding_info():
+    info = {
+        "title": "Welcome to Ourshelves!",
+        "core_principles": [
+            {
+                "principle": "Zero-Cost Sharing",
+                "description": "Ourshelves is a non-monetary platform. All books are shared freely, with no expectation of payment or financial exchange."
+            },
+            {
+                "principle": "Trust-Based Community",
+                "description": "Our community operates on trust and mutual respect. Your reputation, based on ratings from other users, is your most valuable asset."
+            },
+            {
+                "principle": "User Obligations",
+                "description": "As a borrower, you are obligated to return books by the agreed-upon deadline. Failure to do so will negatively impact your rating and may lead to suspension of your borrowing privileges."
+            }
+        ]
+    }
+    return jsonify(info)
 
 if __name__ == '__main__':
     with app.app_context():
