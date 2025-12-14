@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { BookOpen, Search, User, Plus, ArrowRightLeft, LogOut, Menu, X, AlertTriangle } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import ThemeToggle from './ThemeToggle';
+import logoImg from '../assets/logo.png';
 import './Header.css';
 
 function Header() {
@@ -54,10 +55,10 @@ function Header() {
                 <Link to="/" className="logo">
                     <motion.div
                         className="logo-icon-wrapper"
-                        whileHover={{ rotate: [0, -10, 10, 0] }}
-                        transition={{ duration: 0.5 }}
+                        whileHover={{ scale: 1.05, rotate: [0, -5, 5, 0] }}
+                        transition={{ duration: 0.4 }}
                     >
-                        <BookOpen className="logo-icon" />
+                        <img src={logoImg} alt="Ourshelves" className="logo-img" />
                     </motion.div>
                     <span className="logo-text">Ourshelves</span>
                 </Link>
