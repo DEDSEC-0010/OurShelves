@@ -1,0 +1,116 @@
+.report-modal {
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    max-width: 480px;
+    width: 100%;
+    box-shadow: var(--shadow-xl);
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+}
+
+.report-header {
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+
+.report-icon {
+    color: var(--color-warning);
+    margin-bottom: var(--space-3);
+}
+
+.report-header h2 {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-2);
+}
+
+.report-header p {
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.report-note {
+    background: rgba(245, 166, 35, 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    margin-bottom: var(--space-6);
+}
+
+.report-note p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.form-hint {
+    color: var(--color-text-muted);
+    font-weight: 400;
+    margin-left: var(--space-2);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+/* Success State */
+.report-success {
+    text-align: center;
+    padding: var(--space-8) 0;
+}
+
+.success-checkmark {
+    width: 64px;
+    height: 64px;
+    background: var(--color-success);
+    color: white;
+    font-size: var(--font-size-2xl);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-4);
+    animation: successPop 0.3s ease;
+}
+
+@keyframes successPop {
+    0% {
+        transform: scale(0);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.report-success h3 {
+    margin-bottom: var(--space-2);
+}
+
+.report-success p {
+    color: var(--color-text-secondary);
+}

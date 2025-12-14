@@ -1,0 +1,135 @@
+.search-page {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-12);
+}
+
+.search-header {
+    text-align: center;
+    margin-bottom: var(--space-8);
+}
+
+.search-header h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--space-2);
+}
+
+.search-header p {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-lg);
+}
+
+/* Search Bar */
+.search-form {
+    margin-bottom: var(--space-8);
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-fast);
+}
+
+.search-bar:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(91, 70, 54, 0.1);
+}
+
+.search-bar-icon {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+}
+
+.search-bar-input {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: var(--font-size-base);
+    padding: var(--space-3) 0;
+}
+
+.search-bar-input:focus {
+    outline: none;
+}
+
+.search-bar-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.search-bar .btn {
+    padding: var(--space-3) var(--space-6);
+}
+
+/* Search Controls */
+.search-controls {
+    display: flex;
+    color: var(--color-text-muted);
+}
+
+.search-loading .spinner {
+    margin: 0 auto var(--space-4);
+    width: 32px;
+    height: 32px;
+}
+
+.search-results-count {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-6);
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-6);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .books-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .filters-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .books-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .search-bar {
+        flex-wrap: wrap;
+    }
+
+    .search-bar-input {
+        flex: 1 1 100%;
+        order: -1;
+    }
+
+    .search-bar .btn {
+        width: 100%;
+    }
+
+    .filters-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .books-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-controls {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+}
