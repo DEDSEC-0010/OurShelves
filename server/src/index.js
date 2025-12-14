@@ -54,8 +54,9 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
+// Serve static files in production (only if deploying as single service)
+// Set SERVE_STATIC=true if you want the backend to serve the frontend
+if (process.env.NODE_ENV === 'production' && process.env.SERVE_STATIC === 'true') {
     const clientDist = join(__dirname, '../../..', 'client', 'dist');
     app.use(express.static(clientDist));
 
