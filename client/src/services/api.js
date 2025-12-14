@@ -12,14 +12,35 @@ async function request(endpoint, options = {}) {
         ...options,
     };
 
-    const response = await fetch(`${API_BASE}${endpoint}`, config);
-    const data = await response.json();
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`, config);
 
-    if (!response.ok) {
-        throw new Error(data.error || 'Request failed');
+        // Check if response has content
+        const text = await response.text();
+        let data = {};
+
+        if (text) {
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response:', text);
+                throw new Error('Server returned invalid response');
+            }
+        }
+
+        if (!response.ok) {
+            throw new Error(data.error || `Request failed with status ${response.status}`);
+        }
+
+        return data;
+    } catch (error) {
+        // Handle network errors (including CORS)
+        if (error.message === 'Failed to fetch') {
+            console.error('Network error - possible CORS issue. API_BASE:', API_BASE);
+            throw new Error('Unable to connect to server. Check your connection.');
+        }
+        throw error;
     }
-
-    return data;
 }
 
 export const api = {
