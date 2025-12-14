@@ -1,82 +1,159 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Search, User, Plus, ArrowRightLeft, LogOut, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { BookOpen, Search, User, Plus, ArrowRightLeft, LogOut, Menu, X, AlertTriangle } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
+import ThemeToggle from './ThemeToggle';
 import './Header.css';
 
 function Header() {
     const { isAuthenticated, user, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Close mobile menu on route change
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [location]);
 
     const handleLogout = () => {
         logout();
         navigate('/');
-        setMobileMenuOpen(false);
     };
 
+    const navLinks = [
+        { to: '/search', icon: Search, label: 'Find Books' },
+    ];
+
+    const authLinks = [
+        { to: '/my-books', icon: BookOpen, label: 'My Books' },
+        { to: '/add-book', icon: Plus, label: 'Add Book' },
+        { to: '/transactions', icon: ArrowRightLeft, label: 'Transactions' },
+        { to: '/disputes', icon: AlertTriangle, label: 'Disputes' },
+    ];
+
     return (
-        <header className="header">
+        <motion.header
+            className={`header ${scrolled ? 'header-scrolled' : ''}`}
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+        >
             <div className="header-container">
                 <Link to="/" className="logo">
-                    <BookOpen className="logo-icon" />
+                    <motion.div
+                        className="logo-icon-wrapper"
+                        whileHover={{ rotate: [0, -10, 10, 0] }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <BookOpen className="logo-icon" />
+                    </motion.div>
                     <span className="logo-text">Ourshelves</span>
                 </Link>
 
                 <nav className={`nav ${mobileMenuOpen ? 'nav-open' : ''}`}>
-                    <Link to="/search" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
-                        <Search size={18} />
-                        <span>Find Books</span>
-                    </Link>
+                    {navLinks.map((link) => (
+                        <NavLink key={link.to} {...link} currentPath={location.pathname} />
+                    ))}
 
                     {isAuthenticated ? (
                         <>
-                            <Link to="/my-books" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
-                                <BookOpen size={18} />
-                                <span>My Books</span>
-                            </Link>
-                            <Link to="/add-book" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
-                                <Plus size={18} />
-                                <span>Add Book</span>
-                            </Link>
-                            <Link to="/transactions" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
-                                <ArrowRightLeft size={18} />
-                                <span>Transactions</span>
-                            </Link>
+                            {authLinks.map((link) => (
+                                <NavLink key={link.to} {...link} currentPath={location.pathname} />
+                            ))}
                             <div className="nav-divider" />
                             <NotificationCenter />
-                            <Link to="/profile" className="nav-link nav-profile" onClick={() => setMobileMenuOpen(false)}>
-                                <User size={18} />
-                                <span>{user?.name || 'Profile'}</span>
-                            </Link>
-                            <button className="nav-link nav-logout" onClick={handleLogout}>
+                            <NavLink to="/profile" icon={User} label={user?.name || 'Profile'} currentPath={location.pathname} />
+                            <motion.button
+                                className="nav-link nav-logout"
+                                onClick={handleLogout}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
                                 <LogOut size={18} />
                                 <span>Logout</span>
-                            </button>
+                            </motion.button>
                         </>
                     ) : (
                         <>
                             <div className="nav-divider" />
-                            <Link to="/login" className="btn btn-ghost" onClick={() => setMobileMenuOpen(false)}>
+                            <Link to="/login" className="btn btn-ghost">
                                 Login
                             </Link>
-                            <Link to="/register" className="btn btn-primary" onClick={() => setMobileMenuOpen(false)}>
-                                Get Started
-                            </Link>
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Link to="/register" className="btn btn-primary">
+                                    Get Started
+                                </Link>
+                            </motion.div>
                         </>
                     )}
+
+                    <div className="nav-divider" />
+                    <ThemeToggle />
                 </nav>
 
-                <button
-                    className="mobile-menu-btn"
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    aria-label="Toggle menu"
-                >
-                    {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
+                <div className="header-mobile-actions">
+                    <ThemeToggle />
+                    <motion.button
+                        className="mobile-menu-btn"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        aria-label="Toggle menu"
+                        whileTap={{ scale: 0.9 }}
+                    >
+                        <AnimatePresence mode="wait">
+                            {mobileMenuOpen ? (
+                                <motion.div
+                                    key="close"
+                                    initial={{ rotate: -90, opacity: 0 }}
+                                    animate={{ rotate: 0, opacity: 1 }}
+                                    exit={{ rotate: 90, opacity: 0 }}
+                                >
+                                    <X size={24} />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="menu"
+                                    initial={{ rotate: 90, opacity: 0 }}
+                                    animate={{ rotate: 0, opacity: 1 }}
+                                    exit={{ rotate: -90, opacity: 0 }}
+                                >
+                                    <Menu size={24} />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.button>
+                </div>
             </div>
-        </header>
+        </motion.header>
+    );
+}
+
+function NavLink({ to, icon: Icon, label, currentPath }) {
+    const isActive = currentPath === to;
+
+    return (
+        <Link to={to} className={`nav-link ${isActive ? 'nav-link-active' : ''}`}>
+            <Icon size={18} />
+            <span>{label}</span>
+            {isActive && (
+                <motion.div
+                    className="nav-link-indicator"
+                    layoutId="nav-indicator"
+                    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                />
+            )}
+        </Link>
     );
 }
 
